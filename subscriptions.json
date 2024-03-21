@@ -1,0 +1,19 @@
+[
+  {
+    "id": 83,
+    "folder_id": 1,
+    "title": "Managing Systems",
+    "description": "",
+    "link": "https://managingsystems.substack.com",
+    "feed_link": "https://managingsystems.substack.com/feed",
+    "has_icon": true
+  },
+  {
+    "id": 50,
+    "folder_id": 2,
+    "title": "Sideways",
+    "description": "",
+    "link": "http://www.bbc.co.uk/programmes/m000s2kt",
+    "feed_link": "https://podcasts.files.bbci.co.uk/m000s2kt.rss",
+    "has_icon": true
+  }]
