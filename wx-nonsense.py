@@ -2,8 +2,8 @@ import wx
 import requests
 import ctypes
 import json
-import tempfile
 import os
+import sys
 from io import BytesIO
 from PIL import Image
 
@@ -23,10 +23,18 @@ class MyFrame(wx.Frame):
         self.feed_image_list = wx.ImageList(48, 48)
         self.feed_list.AssignImageList(self.feed_image_list, wx.IMAGE_LIST_SMALL)
 
+        # Need this for PyInstaller to find the image
+        if getattr(sys, 'frozen', False):
+            # we are running in a bundle
+            bundle_dir = sys._MEIPASS
+        else:
+            # we are running in a normal Python environment
+            bundle_dir = os.path.dirname(os.path.abspath(__file__))
+
         # Load a default RSS icon and put it in the feed image list
-        image = wx.Image('rss.png', wx.BITMAP_TYPE_PNG).Scale(48, 48, wx.IMAGE_QUALITY_HIGH)
-        bitmap = wx.Bitmap(image)
-        self.feed_image_list.Add(bitmap)
+        rss_image_path = os.path.join(bundle_dir, 'rss.png')
+        image = wx.Image(rss_image_path, wx.BITMAP_TYPE_PNG).Scale(48, 48, wx.IMAGE_QUALITY_HIGH)
+        self.feed_image_list.Add(wx.Bitmap(image))
 
         self.item_list = wx.ListCtrl(splitter, style=wx.LC_REPORT)
         self.item_list.InsertColumn(0, 'Title')
