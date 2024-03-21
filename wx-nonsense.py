@@ -40,12 +40,14 @@ class MyFrame(wx.Frame):
         self.item_list.InsertColumn(0, 'Title')
 
         splitter.SplitVertically(self.feed_list, self.item_list, 400)
-        self.populate_feed_list()
-        self.Show()
 
         self.feed_list.Bind(wx.EVT_SIZE, self.on_feed_list_resize)
         self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
-        self.feed_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_feed_selected)  # Bind event
+        self.feed_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_feed_selected)
+
+        self.populate_feed_list()
+        self.feed_list.Select(0)
+        self.Show()
 
     def on_feed_list_resize(self, event):
         self.feed_list.SetColumnWidth(0, self.feed_list.GetSize()[0])
@@ -106,6 +108,8 @@ class MyFrame(wx.Frame):
         self.item_list.DeleteAllItems()
         feed_id = self.feed_list.GetItemData(event.GetIndex())
         self.populate_item_list(feed_id)
+        feed_name = self.feed_list.GetItemText(event.GetIndex())
+        self.SetTitle(feed_name + ' - Yaffle')
 
 if __name__ == '__main__':
     app = wx.App()
