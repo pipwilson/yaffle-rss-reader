@@ -50,7 +50,6 @@ class MyFrame(wx.Frame):
     def process_icon(self, item, index):
         icon_response = requests.get(f"http://127.0.0.1:7070/api/feeds/{item['id']}/icon")
         if 'image' in icon_response.headers['Content-Type']:
-            print(f"{item['id']} - {icon_response.headers['Content-Type']}")
             icon_stream = BytesIO(icon_response.content)
 
             # we have to use Pillow here because trying to open an icon with transparency in wx.Image
