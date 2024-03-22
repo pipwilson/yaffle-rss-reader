@@ -1,5 +1,12 @@
 import wx
+import os
 import win32api
+import ctypes
+
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(True)
+except:
+    pass
 
 class MyFrame(wx.Frame):
     def __init__(self, parent):
@@ -20,11 +27,17 @@ class MyFrame(wx.Frame):
 
         imageList = wx.ImageList(16, 16)
         # self.closed_folder = imageList.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, (16,16)))
-        shell32 = win32api.GetModuleFileName(win32api.GetModuleHandle('shell32.dll'))
-        self.closed_folder = imageList.Add(wx.Icon(shell32 + ';43', wx.BITMAP_TYPE_ICO, desiredWidth=16, desiredHeight=16))
+        #shell32 = win32api.GetModuleFileName(win32api.GetModuleHandle('shell32.dll'))
+        #self.closed_folder = imageList.Add(wx.Icon(shell32 + ';43', wx.BITMAP_TYPE_ICO, desiredWidth=16, desiredHeight=16))
+       
+        chevron_right_path = os.path.join('.', 'chevron-right.png')
+        self.closed_folder = imageList.Add(wx.Bitmap(wx.Image(chevron_right_path, wx.BITMAP_TYPE_PNG)))
+
+        chevron_down_path = os.path.join('.', 'chevron-down.png')
+        self.open_folder = imageList.Add(wx.Bitmap(wx.Image(chevron_down_path, wx.BITMAP_TYPE_PNG)))
 
         self.normal_file = imageList.Add(wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, (16,16)))
-        self.open_folder = imageList.Add(wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_OTHER, (16,16)))
+        
         self.tree.AssignImageList(imageList)
 
         self.tree.SetItemImage(root, self.closed_folder)
