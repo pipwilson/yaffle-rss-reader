@@ -15,7 +15,7 @@ except:
 class MyFrame(wx.Frame):
     def __init__(self):
         super().__init__(parent=None, title='Yaffle')
-        self.SetSize(3200, 1200)
+        self.SetSize(2000, 1200)
         splitter = wx.SplitterWindow(self)
         self.feed_list = wx.ListCtrl(splitter, style=wx.LC_REPORT)
         self.feed_list.InsertColumn(0, 'Title', 0, 400)
