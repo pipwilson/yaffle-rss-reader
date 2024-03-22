@@ -18,23 +18,9 @@ class MyFrame(wx.Frame):
         self.SetSize(2000, 1200)
         splitter = wx.SplitterWindow(self)
         self.feed_list = wx.ListCtrl(splitter, style=wx.LC_REPORT)
-        self.feed_list.InsertColumn(0, 'Title', 0, 400)
+        self.feed_list.InsertColumn(0, 'Title', 0, 400)        
 
-        self.feed_image_list = wx.ImageList(48, 48)
-        self.feed_list.AssignImageList(self.feed_image_list, wx.IMAGE_LIST_SMALL)
-
-        # Need this for PyInstaller to find the image
-        if getattr(sys, 'frozen', False):
-            # we are running in a bundle
-            bundle_dir = sys._MEIPASS
-        else:
-            # we are running in a normal Python environment
-            bundle_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # Load a default RSS icon and put it in the feed image list
-        rss_image_path = os.path.join(bundle_dir, 'rss.png')
-        image = wx.Image(rss_image_path, wx.BITMAP_TYPE_PNG).Scale(48, 48, wx.IMAGE_QUALITY_HIGH)
-        self.feed_image_list.Add(wx.Bitmap(image))
+        self.feed_list.AssignImageList(self.create_feed_image_list(), wx.IMAGE_LIST_SMALL)
 
         self.item_list = wx.ListCtrl(splitter, style=wx.LC_REPORT)
         self.item_list.InsertColumn(0, 'Title')
@@ -45,9 +31,25 @@ class MyFrame(wx.Frame):
         self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
         self.feed_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_feed_selected)
 
-        self.populate_feed_list()
-        self.feed_list.Select(0)
+        self.initialise_feed_list()        
         self.Show()
+
+    def create_feed_image_list(self):
+        # Need this for PyInstaller to find the images
+        if getattr(sys, 'frozen', False):
+            # we are running in a bundle
+            bundle_dir = sys._MEIPASS
+        else:
+            # we are running in a normal Python environment
+            bundle_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Load a default RSS icon and put it in the feed image list
+        rss_image_path = os.path.join(bundle_dir, 'rss.png')
+        rss_image = wx.Image(rss_image_path, wx.BITMAP_TYPE_PNG).Scale(48, 48, wx.IMAGE_QUALITY_HIGH)
+        
+        feed_image_list = wx.ImageList(48, 48)
+        feed_image_list.Add(wx.Bitmap(rss_image))
+        return feed_image_list
 
     def on_feed_list_resize(self, event):
         self.feed_list.SetColumnWidth(0, self.feed_list.GetSize()[0])
@@ -79,13 +81,13 @@ class MyFrame(wx.Frame):
 
             wx_image = wx_image.Scale(48, 48, wx.IMAGE_QUALITY_HIGH)
             bitmap = wx.Bitmap(wx_image)
-            img_index = self.feed_image_list.Add(bitmap)
+            img_index = self.feed_list.GetImageList(wx.IMAGE_LIST_SMALL).Add(bitmap)
             self.feed_list.SetItemImage(index, img_index)
         else:
             print(f"C Failed to load image for feed {item['id']}. Unknown image data format.")
 
 
-    def populate_feed_list(self):
+    def initialise_feed_list(self):
         response = requests.get("http://127.0.0.1:7070/api/feeds")
         data = response.json()
         # with open('subscriptions.json') as f:
@@ -97,6 +99,7 @@ class MyFrame(wx.Frame):
                 self.process_icon(item, index)
             else:
                 self.feed_list.SetItemImage(index, 0) # the default RSS icon
+        self.feed_list.Select(0)
 
     def populate_item_list(self, feed_id):
         response = requests.get(f"http://127.0.0.1:7070/api/items?feed_id={feed_id}")
