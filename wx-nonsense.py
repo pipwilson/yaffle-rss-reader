@@ -114,6 +114,7 @@ class MyFrame(wx.Frame):
         self.feed_tree.SetIndent(48)
         self.feed_tree.ExpandAll()
         
+        # assumes there are folders and feeds. TODO.
         first_folder = self.feed_tree.GetFirstChild(self.feed_tree.GetRootItem())[0]
         first_feed = self.feed_tree.GetFirstChild(first_folder)[0]
         self.feed_tree.SelectItem(first_feed)
