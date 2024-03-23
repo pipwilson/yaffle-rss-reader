@@ -26,15 +26,15 @@ class MyFrame(wx.Frame):
         feeds_root = self.feed_tree.AppendItem(tree_root, 'Feeds')
         self.feed_tree.SetItemImage(feeds_root, 1)
 
-        self.item_list = wx.ListCtrl(splitter, style=wx.LC_SMALL_ICON)
+        self.item_list = wx.ListCtrl(splitter, style=wx.LC_REPORT)
         self.item_list.InsertColumn(0, 'Title')
 
         splitter.SplitVertically(self.feed_tree, self.item_list, 600)
         splitter.AlwaysShowScrollbars(False, True)
         
-        # self.feed_list.Bind(wx.EVT_SIZE, self.on_feed_list_resize)
-        # self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
-        # self.feed_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_feed_selected)
+        self.feed_tree.Bind(wx.EVT_SIZE, self.on_feed_list_resize)
+        self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
+        self.feed_tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.on_feed_selected)
 
         self.initialise_feed_tree()
 
@@ -58,8 +58,8 @@ class MyFrame(wx.Frame):
         feed_image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, feed_image_list.GetSize()))
         return feed_image_list
 
-    def on_feed_list_resize(self, event):
-        self.feed_list.SetColumnWidth(0, self.feed_list.GetSize()[0])
+    def on_feed_list_resize(self, event):        
+        # self.feed_list.SetColumnWidth(0, self.feed_list.GetSize()[0])
         event.Skip()
 
     def on_item_list_resize(self, event):
@@ -155,14 +155,14 @@ class MyFrame(wx.Frame):
         response = requests.get(f"http://127.0.0.1:7070/api/items?feed_id={feed_id}")
         data = response.json()
         for index, item in enumerate(data["list"]):
+            print(item['title'])
             self.item_list.InsertItem(index, str(item['title']))
 
     def on_feed_selected(self, event):
         self.item_list.DeleteAllItems()
-        feed_id = self.feed_list.GetItemData(event.GetIndex())
+        feed_id = self.feed_tree.GetItemData(event.GetItem())
         self.populate_item_list(feed_id)
-        feed_name = self.feed_list.GetItemText(event.GetIndex())
-        self.SetTitle(feed_name + ' - Yaffle')
+        self.SetTitle(self.feed_tree.GetItemText(event.GetItem()) + ' - Yaffle')
 
 if __name__ == '__main__':
     app = wx.App()
