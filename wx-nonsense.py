@@ -1,4 +1,5 @@
 import wx
+import wx.html
 import requests
 import ctypes
 import json
@@ -16,22 +17,34 @@ class MyFrame(wx.Frame):
     def __init__(self):
         super().__init__(parent=None, title='Yaffle')
         self.SetSize(2000, 1200)
-        splitter = wx.SplitterWindow(self)
+        self.SetPosition(wx.Point(500, 500))
+        feed_tree_splitter = wx.SplitterWindow(self)
 
         # Add tree control and root
-        self.feed_tree = wx.TreeCtrl(splitter, style=wx.TR_HIDE_ROOT | wx.TR_NO_LINES | wx.TR_HAS_BUTTONS | wx.TR_FULL_ROW_HIGHLIGHT)
+        self.feed_tree = wx.TreeCtrl(feed_tree_splitter, style=wx.TR_HIDE_ROOT | wx.TR_NO_LINES | wx.TR_HAS_BUTTONS | wx.TR_FULL_ROW_HIGHLIGHT)
         self.feed_tree.AssignImageList(self.create_feed_image_list())
 
         tree_root = self.feed_tree.AddRoot('Root')
         feeds_root = self.feed_tree.AppendItem(tree_root, 'Feeds')
         self.feed_tree.SetItemImage(feeds_root, 1)
+       
+        # Create another splitter window for the list control and HTML window
+        right_splitter = wx.SplitterWindow(feed_tree_splitter)
 
-        self.item_list = wx.ListCtrl(splitter, style=wx.LC_REPORT)
+        # Set the item list as the top window of the splitter
+        self.item_list = wx.ListCtrl(right_splitter, style=wx.LC_REPORT)
         self.item_list.InsertColumn(0, 'Title')
 
-        splitter.SplitVertically(self.feed_tree, self.item_list, 600)
-        splitter.AlwaysShowScrollbars(False, True)
-        
+        self.html_window = wx.html.HtmlWindow(right_splitter)
+
+        # Set the HTML window as the bottom window of the splitter
+        right_splitter.SplitHorizontally(self.item_list, self.html_window)
+        right_splitter.SetSashPosition(600)  # Set the height of the list control to 300 pixels
+
+        feed_tree_splitter.SplitVertically(self.feed_tree, right_splitter, 600)
+        feed_tree_splitter.AlwaysShowScrollbars(False, True)
+
+        self.feed_tree.Bind(wx.EVT_LEFT_DOWN, self.on_item_activated)
         self.feed_tree.Bind(wx.EVT_SIZE, self.on_feed_list_resize)
         self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
         self.feed_tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.on_feed_selected)
