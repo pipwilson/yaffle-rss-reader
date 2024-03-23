@@ -5,7 +5,7 @@ a = Analysis(
     ['wx-nonsense.py'],
     pathex=[],
     binaries=[],
-    datas=[('rss.png', '.')],
+    datas=[('rss-32.png', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

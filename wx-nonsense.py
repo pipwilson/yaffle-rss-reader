@@ -46,8 +46,10 @@ class MyFrame(wx.Frame):
 
         self.feed_tree.Bind(wx.EVT_LEFT_DOWN, self.on_item_activated)
         self.feed_tree.Bind(wx.EVT_SIZE, self.on_feed_list_resize)
-        self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
         self.feed_tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.on_feed_selected)
+
+        self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
+        self.item_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_item_selected)
 
         self.initialise_feed_tree()
 
@@ -106,7 +108,6 @@ class MyFrame(wx.Frame):
 
     def initialise_feed_tree(self):
         response = requests.get("http://127.0.0.1:7070/api/feeds")
-        response = requests.get("http://127.0.0.1:7070/api/feeds")
         data = response.json()
         # with open('subscriptions.json') as f:
         #     data = json.load(f)
@@ -160,22 +161,34 @@ class MyFrame(wx.Frame):
 
     def clicked_folder_or_expander(self, hit_test_flags):
         # if the mouse is over the expander or the icon of a folder, return True
-        # if the mouse is over the text of a folder, return False
         return (hit_test_flags & wx.TREE_HITTEST_ONITEMICON) == wx.TREE_HITTEST_ONITEMICON or (hit_test_flags & wx.TREE_HITTEST_ONITEMBUTTON) == wx.TREE_HITTEST_ONITEMBUTTON
 
 
     def populate_item_list(self, feed_id):
         response = requests.get(f"http://127.0.0.1:7070/api/items?feed_id={feed_id}")
         data = response.json()
-        for index, item in enumerate(data["list"]):
-            print(item['title'])
-            self.item_list.InsertItem(index, str(item['title']))
+        for index, feed_item in enumerate(data["list"]):
+            item = self.item_list.InsertItem(index, str(feed_item['title']))
+            self.item_list.SetItemData(item, feed_item['id'])
 
     def on_feed_selected(self, event):
         self.item_list.DeleteAllItems()
         feed_id = self.feed_tree.GetItemData(event.GetItem())
         self.populate_item_list(feed_id)
         self.SetTitle(self.feed_tree.GetItemText(event.GetItem()) + ' - Yaffle')
+
+    def on_item_selected(self, event):
+        item_index = event.GetIndex()
+        item_title = self.item_list.GetItemText(item_index)
+        item_id = self.item_list.GetItemData(item_index)
+        print(item_title, item_id)
+
+        response = requests.get(f"http://127.0.0.1:7070/api/items/{item_id}")
+        data = response.json()
+
+        item_content = data['content']
+
+        self.html_window.SetPage(f"<h1>{item_title}</h1><p>{item_content}</p>")
 
 if __name__ == '__main__':
     app = wx.App()
