@@ -114,19 +114,14 @@ class MyFrame(wx.Frame):
         self.feed_tree.SetIndent(48)
         self.feed_tree.ExpandAll()
         
-        tree_item = self.feed_tree.GetFirstChild(self.feed_tree.GetRootItem())[0]
-        self.feed_tree.SelectItem(tree_item)
-        self.feed_tree.EnsureVisible(self.feed_tree.GetFirstChild(tree_item)[0])
+        first_folder = self.feed_tree.GetFirstChild(self.feed_tree.GetRootItem())[0]
+        first_feed = self.feed_tree.GetFirstChild(first_folder)[0]
+        self.feed_tree.SelectItem(first_feed)
         
-        
-        self.feed_tree.Bind(wx.EVT_LEFT_DOWN, self.on_item_activated)
-
-        # SelectItem pushes the item off the top of the viewport, so we need to scroll it back into view
-        # if self.feed_tree.GetPrevSibling(tree_item) is not None:
-        #     self.feed_tree.EnsureVisible(self.feed_tree.GetPrevSibling(tree_item))
-        # else:
-        #     self.feed_tree.EnsureVisible(self.feed_tree.GetItemParent(tree_item))
-
+        # absolute hack - this is the only way to scroll the first item into view. EnsureVisible doesn't work
+        # and nor does calling EnsureVisible on the parent
+        self.feed_tree.ScrollLines(-2) 
+           
     # TreeCtrl requires double-click to expand/collapse items by default
     # This method allows expanding/collapsing items with a single click by using the EVT_LEFT_DOWN event
     def on_item_activated(self, event):
