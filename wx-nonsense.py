@@ -1,11 +1,12 @@
-import wx
-import wx.html
-import requests
 import ctypes
 import json
 import os
 import sys
 from io import BytesIO
+
+import wx
+import wx.html
+import requests
 from PIL import Image
 
 try:
@@ -27,7 +28,7 @@ class MyFrame(wx.Frame):
         tree_root = self.feed_tree.AddRoot('Root')
         feeds_root = self.feed_tree.AppendItem(tree_root, 'Feeds')
         self.feed_tree.SetItemImage(feeds_root, 1)
-       
+
         # Create another splitter window for the list control and HTML window
         right_splitter = wx.SplitterWindow(feed_tree_splitter)
 
@@ -67,13 +68,13 @@ class MyFrame(wx.Frame):
         # Load a default RSS icon and put it in the feed image list
         rss_image_path = os.path.join(bundle_dir, 'rss-32.png')
         rss_image = wx.Image(rss_image_path, wx.BITMAP_TYPE_PNG).Scale(icon_size[0], icon_size[1], wx.IMAGE_QUALITY_HIGH)
-        
+
         feed_image_list = wx.ImageList(icon_size[0], icon_size[1])
         feed_image_list.Add(wx.Bitmap(rss_image))
         feed_image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, feed_image_list.GetSize()))
         return feed_image_list
 
-    def on_feed_list_resize(self, event):        
+    def on_feed_list_resize(self, event):
         # self.feed_list.SetColumnWidth(0, self.feed_list.GetSize()[0])
         event.Skip()
 
@@ -116,27 +117,28 @@ class MyFrame(wx.Frame):
 
         for index, item in enumerate(data):
             subscription = self.feed_tree.AppendItem(self.feed_tree.GetFirstChild(self.feed_tree.GetRootItem())[0], str(item['title']).strip())
-            
+
             self.feed_tree.SetItemData(subscription, item['id'])
+
+            icon_index = 0 # the default RSS icon
             if item['has_icon'] is True:
                 icon = self.process_icon(item, icon_size)
-                icon_index = self.feed_tree.GetImageList().Add(icon)
-                self.feed_tree.SetItemImage(subscription, icon_index)
-            else:
-                self.feed_tree.SetItemImage(subscription, 0) # the default RSS icon
-        
+                if icon:
+                    icon_index = self.feed_tree.GetImageList().Add(icon)
+            self.feed_tree.SetItemImage(subscription, icon_index)
+
         self.feed_tree.SetIndent(48)
         self.feed_tree.ExpandAll()
-        
+
         # assumes there are folders and feeds. TODO.
         first_folder = self.feed_tree.GetFirstChild(self.feed_tree.GetRootItem())[0]
         first_feed = self.feed_tree.GetFirstChild(first_folder)[0]
         self.feed_tree.SelectItem(first_feed)
-        
+
         # absolute hack - this is the only way to scroll the first item into view. EnsureVisible doesn't work
         # and nor does calling EnsureVisible on the parent
-        self.feed_tree.ScrollLines(-2) 
-           
+        self.feed_tree.ScrollLines(-2)
+
     # TreeCtrl requires double-click to expand/collapse items by default
     # This method allows expanding/collapsing items with a single click by using the EVT_LEFT_DOWN event
     def on_item_activated(self, event):
