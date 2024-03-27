@@ -1,5 +1,4 @@
 import ctypes
-import json
 import os
 import sys
 from io import BytesIO
@@ -25,10 +24,8 @@ class MyFrame(wx.Frame):
         # Add tree control and root
         self.feed_tree = wx.TreeCtrl(feed_tree_splitter, style=wx.TR_HIDE_ROOT | wx.TR_NO_LINES | wx.TR_HAS_BUTTONS | wx.TR_FULL_ROW_HIGHLIGHT)
         self.feed_tree.AssignImageList(self.create_feed_image_list())
-
-        tree_root = self.feed_tree.AddRoot('Root')
-        feeds_root = self.feed_tree.AppendItem(tree_root, 'Feeds')
-        self.feed_tree.SetItemImage(feeds_root, 1)
+        self.feed_tree.SetIndent(36)
+        self.feed_tree.AddRoot('Root')
 
         # Create another splitter window for the list control and HTML window
         right_splitter = wx.SplitterWindow(feed_tree_splitter)
@@ -48,7 +45,7 @@ class MyFrame(wx.Frame):
 
         self.feed_tree.Bind(wx.EVT_LEFT_DOWN, self.on_item_activated)
         self.feed_tree.Bind(wx.EVT_SIZE, self.on_feed_list_resize)
-        self.feed_tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.on_feed_selected)
+        self.feed_tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.on_feed_tree_item_selected)
 
         self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
         self.item_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_item_selected)
@@ -109,36 +106,37 @@ class MyFrame(wx.Frame):
             print(f"C Failed to load image for feed {item['id']}. Unknown image data format.")
 
     def initialise_feed_tree(self):
-        response = requests.get("http://127.0.0.1:7070/api/feeds")
-        data = response.json()
-        # with open('subscriptions.json') as f:
-        #     data = json.load(f)
+        folder_response = requests.get("http://127.0.0.1:7070/api/folders")
+        folder_data = folder_response.json()
+        folder_array = [0] # create an array to hold the folder items with a 0 to represent the root
+        feed_array = []
 
-        icon_size = self.feed_tree.GetImageList().GetSize(0)
+        for index, folder in enumerate(folder_data):
+            folder_array.append(self.feed_tree.AppendItem(self.feed_tree.GetRootItem(), folder['title'], 1, -1, folder['id']))
 
-        for index, item in enumerate(data):
-            subscription = self.feed_tree.AppendItem(self.feed_tree.GetFirstChild(self.feed_tree.GetRootItem())[0], str(item['title']).strip())
+        feed_response = requests.get("http://127.0.0.1:7070/api/feeds")
+        feed_data = feed_response.json()
 
-            self.feed_tree.SetItemData(subscription, item['id'])
-
+        # Add each feed to the correct folder with the correct icon
+        for index, item in enumerate(feed_data):
             icon_index = 0 # the default RSS icon
             if item['has_icon'] is True:
-                icon = self.process_icon(item, icon_size)
+                icon = self.process_icon(item, self.feed_tree.GetImageList().GetSize(0))
                 if icon:
                     icon_index = self.feed_tree.GetImageList().Add(icon)
-            self.feed_tree.SetItemImage(subscription, icon_index)
 
-        self.feed_tree.SetIndent(48)
+            feed_array.append(self.feed_tree.AppendItem(folder_array[item['folder_id']], str(item['title']).strip(), icon_index, -1, item['id']))
+
         self.feed_tree.ExpandAll()
 
-        # assumes there are folders and feeds. TODO.
-        first_folder = self.feed_tree.GetFirstChild(self.feed_tree.GetRootItem())[0]
-        first_feed = self.feed_tree.GetFirstChild(first_folder)[0]
-        self.feed_tree.SelectItem(first_feed)
+        self.feed_tree.SelectItem(feed_array[0])
 
         # absolute hack - this is the only way to scroll the first item into view. EnsureVisible doesn't work
         # and nor does calling EnsureVisible on the parent
+        self.feed_tree.EnsureVisible(feed_array[0])
         self.feed_tree.ScrollLines(-2)
+
+
 
     # TreeCtrl requires double-click to expand/collapse items by default
     # This method allows expanding/collapsing items with a single click by using the EVT_LEFT_DOWN event
@@ -174,8 +172,12 @@ class MyFrame(wx.Frame):
             item = self.item_list.InsertItem(index, str(feed_item['title']))
             self.item_list.SetItemData(item, feed_item['id'])
 
-    def on_feed_selected(self, event):
+    def on_feed_tree_item_selected(self, event):
         self.item_list.DeleteAllItems()
+        # if user has clicked a folder, do nothing
+        if self.feed_tree.ItemHasChildren(event.GetItem()):
+            return
+
         feed_id = self.feed_tree.GetItemData(event.GetItem())
         self.populate_item_list(feed_id)
         self.SetTitle(self.feed_tree.GetItemText(event.GetItem()) + ' - Yaffle')
@@ -193,6 +195,7 @@ class MyFrame(wx.Frame):
         dt = datetime.strptime(data['date'], "%Y-%m-%dT%H:%M:%SZ")
         item_date = dt.strftime("%#d %B %Y at %H:%M")
 
+        # address of yarr - needs extracting to a config file TODO
         base_url = "http://127.0.0.1:7070"
 
         content_start = f"""
@@ -208,8 +211,6 @@ class MyFrame(wx.Frame):
 """
 
         content = f"{content_start}<h1>{item_title}</h1>{content_metadata}<hr>{item_content}{content_end}"
-
-        print(content)
 
         self.web_view.SetPage(content, "")
 
