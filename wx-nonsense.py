@@ -3,9 +3,10 @@ import json
 import os
 import sys
 from io import BytesIO
+from datetime import datetime
 
 import wx
-import wx.html
+import wx.html2
 import requests
 from PIL import Image
 
@@ -36,10 +37,10 @@ class MyFrame(wx.Frame):
         self.item_list = wx.ListCtrl(right_splitter, style=wx.LC_REPORT)
         self.item_list.InsertColumn(0, 'Title')
 
-        self.html_window = wx.html.HtmlWindow(right_splitter)
+        self.web_view = wx.html2.WebView.New(right_splitter)
 
         # Set the HTML window as the bottom window of the splitter
-        right_splitter.SplitHorizontally(self.item_list, self.html_window)
+        right_splitter.SplitHorizontally(self.item_list, self.web_view)
         right_splitter.SetSashPosition(600)  # Set the height of the list control to 300 pixels
 
         feed_tree_splitter.SplitVertically(self.feed_tree, right_splitter, 600)
@@ -189,8 +190,28 @@ class MyFrame(wx.Frame):
         data = response.json()
 
         item_content = data['content']
+        dt = datetime.strptime(data['date'], "%Y-%m-%dT%H:%M:%SZ")
+        item_date = dt.strftime("%#d %B %Y at %H:%M")
 
-        self.html_window.SetPage(f"<h1>{item_title}</h1><p>{item_content}</p>")
+        base_url = "http://127.0.0.1:7070"
+
+        content_start = f"""
+        <link rel="stylesheet" href="{base_url}/static/stylesheets/bootstrap.min.css">
+        <link rel="stylesheet" href="{base_url}/static/stylesheets/app.css">
+        <style>.content-wrapper {{ margin: 0 auto 0 1em !important; }}</style>
+        <div class="content px-4 pt-3 pb-5 border-top overflow-auto" style="font-size: 1rem;"><div class="content-wrapper">
+"""
+        content_end = "</div></div>"
+
+        content_metadata = f"""
+<div class="text-muted"><div>{self.feed_tree.GetItemText(self.feed_tree.GetSelection())}</div> <time>{item_date}</time></div>
+"""
+
+        content = f"{content_start}<h1>{item_title}</h1>{content_metadata}<hr>{item_content}{content_end}"
+
+        print(content)
+
+        self.web_view.SetPage(content, "")
 
 if __name__ == '__main__':
     app = wx.App()
