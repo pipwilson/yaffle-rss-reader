@@ -109,7 +109,7 @@ class MyFrame(wx.Frame):
             print(f"C Failed to load image for feed {item['id']}. Unknown image data format.")
 
     def initialise_feed_tree(self):
-        folder_response = requests.get("{self.YARR_URL}/api/folders")
+        folder_response = requests.get(f"{self.YARR_URL}/api/folders")
         folder_data = folder_response.json()
         folder_array = [self.feed_tree.GetRootItem()] # create an array to hold the folder items. First item is the root
         feed_array = []
@@ -117,7 +117,7 @@ class MyFrame(wx.Frame):
         for index, folder in enumerate(folder_data):
             folder_array.append(self.feed_tree.AppendItem(self.feed_tree.GetRootItem(), folder['title'], 1, -1, folder['id']))
 
-        feed_response = requests.get("{self.YARR_URL}/api/feeds")
+        feed_response = requests.get(f"{self.YARR_URL}/api/feeds")
         feed_data = feed_response.json()
 
         # Add each feed to the correct folder with the correct icon
@@ -140,8 +140,6 @@ class MyFrame(wx.Frame):
         # EnsureVisible doesn't work and nor does calling EnsureVisible on the parent
         self.feed_tree.EnsureVisible(feed_array[0])
         self.feed_tree.ScrollLines(-2)
-
-
 
     # TreeCtrl requires double-click to expand/collapse items by default
     # This method allows expanding/collapsing items with a single click by using EVT_LEFT_DOWN
@@ -175,11 +173,8 @@ class MyFrame(wx.Frame):
         response = requests.get(f"{self.YARR_URL}/api/items?feed_id={feed_id}")
         data = response.json()
 
-        # Create a wx.ListItemAttr object with a bold font
-        unread_attribute = wx.ListItemAttr()
         bold_font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         bold_font.SetWeight(wx.FONTWEIGHT_BOLD)
-        unread_attribute.SetFont(bold_font)
 
         for index, feed_item in enumerate(data["list"]):
             item = self.item_list.InsertItem(index, str(feed_item['title']))
