@@ -26,6 +26,7 @@ class MyFrame(wx.Frame):
 
         # Add tree control and root
         self.feed_tree = wx.TreeCtrl(feed_tree_splitter, style=wx.TR_HIDE_ROOT | wx.TR_NO_LINES | wx.TR_HAS_BUTTONS | wx.TR_FULL_ROW_HIGHLIGHT)
+        self.feed_tree.SetBackgroundColour(wx.Colour(249, 255, 249))
         self.feed_tree.AssignImageList(self.create_feed_image_list())
         self.feed_tree.SetIndent(36)
         self.feed_tree.AddRoot('Root')
@@ -53,7 +54,14 @@ class MyFrame(wx.Frame):
         self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
         self.item_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_feed_item_selected)
 
+        # fetch the status so we know which feeds to mark as bold on startup
+        self.feed_status = self.get_feed_status()
         self.initialise_feed_tree()
+
+    def get_feed_status(self):
+        response = requests.get(f"{self.YARR_URL}/api/status")
+        data = response.json()
+        return data
 
     def create_feed_image_list(self):
         # Need this for PyInstaller to find the images
@@ -72,7 +80,7 @@ class MyFrame(wx.Frame):
 
         feed_image_list = wx.ImageList(icon_size[0], icon_size[1])
         feed_image_list.Add(wx.Bitmap(rss_image))
-        feed_image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, feed_image_list.GetSize()))
+        feed_image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, icon_size))
         return feed_image_list
 
     def on_feed_list_resize(self, event):
@@ -115,7 +123,9 @@ class MyFrame(wx.Frame):
         feed_array = []
 
         for index, folder in enumerate(folder_data):
-            folder_array.append(self.feed_tree.AppendItem(self.feed_tree.GetRootItem(), folder['title'], 1, -1, folder['id']))
+            folder_item_id = self.feed_tree.AppendItem(self.feed_tree.GetRootItem(), folder['title'], 1, -1, folder['id'])
+            folder_array.append(folder_item_id)
+            # TODO make folder bold if it contains feeds with unread items
 
         feed_response = requests.get(f"{self.YARR_URL}/api/feeds")
         feed_data = feed_response.json()
@@ -130,7 +140,13 @@ class MyFrame(wx.Frame):
 
             if item['folder_id'] is None:
                 item['folder_id'] = folder_array[0]
-            feed_array.append(self.feed_tree.AppendItem(folder_array[item['folder_id']], str(item['title']).strip(), icon_index, -1, item['id']))
+
+            feed_item_id = self.feed_tree.AppendItem(folder_array[item['folder_id']], str(item['title']).strip(), icon_index, -1, item['id'])
+            feed_array.append(feed_item_id)
+
+            # if the feed has unread items, make it bold
+            if item['id'] in self.get_unread_feed_ids():
+                self.feed_tree.SetItemFont(feed_item_id, self.feed_tree.GetFont().Bold())
 
         self.feed_tree.ExpandAll()
 
@@ -140,6 +156,9 @@ class MyFrame(wx.Frame):
         # EnsureVisible doesn't work and nor does calling EnsureVisible on the parent
         self.feed_tree.EnsureVisible(feed_array[0])
         self.feed_tree.ScrollLines(-2)
+
+    def get_unread_feed_ids(self):
+        return [item['feed_id'] for item in self.feed_status['stats'] if item['unread'] > 0]
 
     # TreeCtrl requires double-click to expand/collapse items by default
     # This method allows expanding/collapsing items with a single click by using EVT_LEFT_DOWN
@@ -162,12 +181,10 @@ class MyFrame(wx.Frame):
             if self.feed_tree.IsSelected(tree_item_id) is not True:
                 self.feed_tree.SelectItem(tree_item_id)
 
-
     def clicked_folder_or_expander(self, hit_test_flags):
         # if the mouse is over the expander or the icon of a folder, return True
         return (hit_test_flags & wx.TREE_HITTEST_ONITEMICON) == wx.TREE_HITTEST_ONITEMICON or \
             (hit_test_flags & wx.TREE_HITTEST_ONITEMBUTTON) == wx.TREE_HITTEST_ONITEMBUTTON
-
 
     def populate_item_list(self, feed_id):
         response = requests.get(f"{self.YARR_URL}/api/items?feed_id={feed_id}")
@@ -183,7 +200,6 @@ class MyFrame(wx.Frame):
             # if the item is unread, set the font to bold
             if feed_item['status'] == "unread":
                 self.item_list.SetItemFont(item, bold_font)
-
 
     def on_feed_tree_item_selected(self, event):
         self.item_list.DeleteAllItems()
@@ -223,6 +239,25 @@ class MyFrame(wx.Frame):
         content = f"{content_start}<h1>{item_title}</h1>{content_metadata}<hr>{item_content}{content_end}"
 
         self.web_view.SetPage(content, "")
+        self.mark_item_as_read(item_id, item_index)
+
+    def mark_item_as_read(self, item_id, item_index):
+        requests.put(f"{self.YARR_URL}/api/items/{item_id}", json={"status": "read"})
+        normal_font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        normal_font.SetWeight(wx.FONTWEIGHT_NORMAL)
+        self.item_list.SetItemFont(item_index, normal_font)
+
+        # if no more unread items in the list, mark the feed as read
+        if not any([self.item_list.GetItemFont(index).GetWeight() == wx.FONTWEIGHT_BOLD for index in range(self.item_list.GetItemCount())]):
+            # feed_id = self.feed_tree.GetItemData(self.feed_tree.GetSelection())
+            # if feed_id in self.get_unread_feed_ids():
+            self.feed_tree.SetItemFont(self.feed_tree.GetSelection(), self.feed_tree.GetFont().Normal())
+
+    def mark_item_as_unread(self, item_id, item_index):
+        requests.put(f"{self.YARR_URL}/api/items/{item_id}", json={"status": "unread"})
+        normal_font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        normal_font.SetWeight(wx.FONTWEIGHT_BOLD)
+        self.item_list.SetItemFont(item_index, normal_font)
 
 if __name__ == '__main__':
     app = wx.App()
