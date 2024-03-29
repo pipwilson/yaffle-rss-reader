@@ -15,6 +15,9 @@ except:
     pass
 
 class MyFrame(wx.Frame):
+
+    YARR_URL = "http://127.0.0.1:7070"
+
     def __init__(self):
         super().__init__(parent=None, title='Yaffle')
         self.SetSize(2000, 1200)
@@ -81,7 +84,7 @@ class MyFrame(wx.Frame):
         event.Skip()
 
     def process_icon(self, item, icon_size):
-        icon_response = requests.get(f"http://127.0.0.1:7070/api/feeds/{item['id']}/icon")
+        icon_response = requests.get(f"{self.YARR_URL}/api/feeds/{item['id']}/icon")
         if 'image' in icon_response.headers['Content-Type']:
             icon_stream = BytesIO(icon_response.content)
 
@@ -106,7 +109,7 @@ class MyFrame(wx.Frame):
             print(f"C Failed to load image for feed {item['id']}. Unknown image data format.")
 
     def initialise_feed_tree(self):
-        folder_response = requests.get("http://127.0.0.1:7070/api/folders")
+        folder_response = requests.get("{self.YARR_URL}/api/folders")
         folder_data = folder_response.json()
         folder_array = [self.feed_tree.GetRootItem()] # create an array to hold the folder items. First item is the root
         feed_array = []
@@ -114,7 +117,7 @@ class MyFrame(wx.Frame):
         for index, folder in enumerate(folder_data):
             folder_array.append(self.feed_tree.AppendItem(self.feed_tree.GetRootItem(), folder['title'], 1, -1, folder['id']))
 
-        feed_response = requests.get("http://127.0.0.1:7070/api/feeds")
+        feed_response = requests.get("{self.YARR_URL}/api/feeds")
         feed_data = feed_response.json()
 
         # Add each feed to the correct folder with the correct icon
@@ -169,7 +172,7 @@ class MyFrame(wx.Frame):
 
 
     def populate_item_list(self, feed_id):
-        response = requests.get(f"http://127.0.0.1:7070/api/items?feed_id={feed_id}")
+        response = requests.get(f"{self.YARR_URL}/api/items?feed_id={feed_id}")
         data = response.json()
 
         # Create a wx.ListItemAttr object with a bold font
@@ -203,19 +206,16 @@ class MyFrame(wx.Frame):
         item_id = self.item_list.GetItemData(item_index)
         print(item_title, item_id)
 
-        response = requests.get(f"http://127.0.0.1:7070/api/items/{item_id}")
+        response = requests.get(f"{self.YARR_URL}/api/items/{item_id}")
         data = response.json()
 
         item_content = data['content']
         dt = datetime.strptime(data['date'], "%Y-%m-%dT%H:%M:%SZ")
         item_date = dt.strftime("%#d %B %Y at %H:%M")
 
-        # address of yarr - needs extracting to a config file TODO
-        base_url = "http://127.0.0.1:7070"
-
         content_start = f"""
-        <link rel="stylesheet" href="{base_url}/static/stylesheets/bootstrap.min.css">
-        <link rel="stylesheet" href="{base_url}/static/stylesheets/app.css">
+        <link rel="stylesheet" href="{self.YARR_URL}/static/stylesheets/bootstrap.min.css">
+        <link rel="stylesheet" href="{self.YARR_URL}/static/stylesheets/app.css">
         <style>.content-wrapper {{ margin: 0 auto 0 1em !important; }}</style>
         <div class="content px-4 pt-3 pb-5 border-top overflow-auto" style="font-size: 1rem;"><div class="content-wrapper">
 """
