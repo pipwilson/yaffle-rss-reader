@@ -43,12 +43,12 @@ class MyFrame(wx.Frame):
         feed_tree_splitter.SplitVertically(self.feed_tree, right_splitter, 600)
         feed_tree_splitter.AlwaysShowScrollbars(False, True)
 
-        self.feed_tree.Bind(wx.EVT_LEFT_DOWN, self.on_item_activated)
+        self.feed_tree.Bind(wx.EVT_LEFT_DOWN, self.on_tree_item_activated)
         self.feed_tree.Bind(wx.EVT_SIZE, self.on_feed_list_resize)
         self.feed_tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.on_feed_tree_item_selected)
 
         self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
-        self.item_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_item_selected)
+        self.item_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_feed_item_selected)
 
         self.initialise_feed_tree()
 
@@ -108,7 +108,7 @@ class MyFrame(wx.Frame):
     def initialise_feed_tree(self):
         folder_response = requests.get("http://127.0.0.1:7070/api/folders")
         folder_data = folder_response.json()
-        folder_array = [0] # create an array to hold the folder items with a 0 to represent the root
+        folder_array = [self.feed_tree.GetRootItem()] # create an array to hold the folder items. First item is the root
         feed_array = []
 
         for index, folder in enumerate(folder_data):
@@ -125,52 +125,67 @@ class MyFrame(wx.Frame):
                 if icon:
                     icon_index = self.feed_tree.GetImageList().Add(icon)
 
+            if item['folder_id'] is None:
+                item['folder_id'] = folder_array[0]
             feed_array.append(self.feed_tree.AppendItem(folder_array[item['folder_id']], str(item['title']).strip(), icon_index, -1, item['id']))
 
         self.feed_tree.ExpandAll()
 
         self.feed_tree.SelectItem(feed_array[0])
 
-        # absolute hack - this is the only way to scroll the first item into view. EnsureVisible doesn't work
-        # and nor does calling EnsureVisible on the parent
+        # absolute hack - this is the only way to scroll the first item into view.
+        # EnsureVisible doesn't work and nor does calling EnsureVisible on the parent
         self.feed_tree.EnsureVisible(feed_array[0])
         self.feed_tree.ScrollLines(-2)
 
 
 
     # TreeCtrl requires double-click to expand/collapse items by default
-    # This method allows expanding/collapsing items with a single click by using the EVT_LEFT_DOWN event
-    def on_item_activated(self, event):
+    # This method allows expanding/collapsing items with a single click by using EVT_LEFT_DOWN
+    def on_tree_item_activated(self, event):
         mouse_position=event.GetPosition()
         hit_test_result = self.feed_tree.HitTest(mouse_position)
         tree_item_id = hit_test_result[0]
         hit_test_flags = hit_test_result[1]
 
-        if(tree_item_id.IsOk() is not True):
+        if tree_item_id.IsOk() is not True:
             event.Skip()
             return
 
         # if you click the icon of a folder or +/-, expand/collapse it
         # otherwise select the item if it wasn't already selected
-        if(self.clicked_folder_or_expander(hit_test_flags)):
-            if(self.feed_tree.ItemHasChildren(tree_item_id)):
+        if self.clicked_folder_or_expander(hit_test_flags):
+            if self.feed_tree.ItemHasChildren(tree_item_id):
                 self.feed_tree.Toggle(tree_item_id)
         else:
-            if(self.feed_tree.IsSelected(tree_item_id) is not True):
+            if self.feed_tree.IsSelected(tree_item_id) is not True:
                 self.feed_tree.SelectItem(tree_item_id)
 
 
     def clicked_folder_or_expander(self, hit_test_flags):
         # if the mouse is over the expander or the icon of a folder, return True
-        return (hit_test_flags & wx.TREE_HITTEST_ONITEMICON) == wx.TREE_HITTEST_ONITEMICON or (hit_test_flags & wx.TREE_HITTEST_ONITEMBUTTON) == wx.TREE_HITTEST_ONITEMBUTTON
+        return (hit_test_flags & wx.TREE_HITTEST_ONITEMICON) == wx.TREE_HITTEST_ONITEMICON or \
+            (hit_test_flags & wx.TREE_HITTEST_ONITEMBUTTON) == wx.TREE_HITTEST_ONITEMBUTTON
 
 
     def populate_item_list(self, feed_id):
         response = requests.get(f"http://127.0.0.1:7070/api/items?feed_id={feed_id}")
         data = response.json()
+
+        # Create a wx.ListItemAttr object with a bold font
+        unread_attribute = wx.ListItemAttr()
+        bold_font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        bold_font.SetWeight(wx.FONTWEIGHT_BOLD)
+        unread_attribute.SetFont(bold_font)
+
         for index, feed_item in enumerate(data["list"]):
             item = self.item_list.InsertItem(index, str(feed_item['title']))
             self.item_list.SetItemData(item, feed_item['id'])
+
+            # if the item is unread, set the font to bold
+            if feed_item['status'] == "unread":
+                self.item_list.SetItemFont(item, bold_font)
+
 
     def on_feed_tree_item_selected(self, event):
         self.item_list.DeleteAllItems()
@@ -182,7 +197,7 @@ class MyFrame(wx.Frame):
         self.populate_item_list(feed_id)
         self.SetTitle(self.feed_tree.GetItemText(event.GetItem()) + ' - Yaffle')
 
-    def on_item_selected(self, event):
+    def on_feed_item_selected(self, event):
         item_index = event.GetIndex()
         item_title = self.item_list.GetItemText(item_index)
         item_id = self.item_list.GetItemData(item_index)
