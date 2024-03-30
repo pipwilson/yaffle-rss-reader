@@ -193,6 +193,9 @@ class MyFrame(wx.Frame):
         bold_font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         bold_font.SetWeight(wx.FONTWEIGHT_BOLD)
 
+        normal_font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        normal_font.SetWeight(wx.FONTWEIGHT_NORMAL)
+
         for index, feed_item in enumerate(data["list"]):
             item = self.item_list.InsertItem(index, str(feed_item['title']))
             self.item_list.SetItemData(item, feed_item['id'])
@@ -200,6 +203,9 @@ class MyFrame(wx.Frame):
             # if the item is unread, set the font to bold
             if feed_item['status'] == "unread":
                 self.item_list.SetItemFont(item, bold_font)
+            else:
+                # we must set a default font in order to check for unread items later
+                self.item_list.SetItemFont(item, normal_font)
 
     def on_feed_tree_item_selected(self, event):
         self.item_list.DeleteAllItems()
@@ -215,7 +221,6 @@ class MyFrame(wx.Frame):
         item_index = event.GetIndex()
         item_title = self.item_list.GetItemText(item_index)
         item_id = self.item_list.GetItemData(item_index)
-        print(item_title, item_id)
 
         response = requests.get(f"{self.YARR_URL}/api/items/{item_id}")
         data = response.json()
@@ -247,10 +252,21 @@ class MyFrame(wx.Frame):
         normal_font.SetWeight(wx.FONTWEIGHT_NORMAL)
         self.item_list.SetItemFont(item_index, normal_font)
 
+        more_unread_items = False
+
+        for index in range(self.item_list.GetItemCount()):
+            if self.item_list.GetItemFont(index).GetWeight() == wx.FONTWEIGHT_BOLD:
+                more_unread_items = True
+                break
+
+        if not more_unread_items:
+            normal_font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+            normal_font.SetWeight(wx.FONTWEIGHT_NORMAL)
+            self.feed_tree.SetItemFont(self.feed_tree.GetSelection(), normal_font)
+
         # if no more unread items in the list, mark the feed as read
-        if not any([self.item_list.GetItemFont(index).GetWeight() == wx.FONTWEIGHT_BOLD for index in range(self.item_list.GetItemCount())]):
-            # feed_id = self.feed_tree.GetItemData(self.feed_tree.GetSelection())
-            # if feed_id in self.get_unread_feed_ids():
+        if any([self.item_list.GetItemFont(index).GetWeight() == wx.FONTWEIGHT_BOLD \
+                for index in range(self.item_list.GetItemCount())]):
             self.feed_tree.SetItemFont(self.feed_tree.GetSelection(), self.feed_tree.GetFont().Normal())
 
     def mark_item_as_unread(self, item_id, item_index):
