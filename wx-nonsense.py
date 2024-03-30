@@ -22,6 +22,7 @@ class MyFrame(wx.Frame):
         super().__init__(parent=None, title='Yaffle')
         self.SetSize(2000, 1200)
         self.SetPosition(wx.Point(500, 500))
+        self.SetIcon(wx.Icon("yaffle.png", wx.BITMAP_TYPE_PNG))
         feed_tree_splitter = wx.SplitterWindow(self)
 
         # Add tree control and root
@@ -150,7 +151,8 @@ class MyFrame(wx.Frame):
 
         self.feed_tree.ExpandAll()
 
-        self.feed_tree.SelectItem(feed_array[0])
+        # self.feed_tree.SelectItem(feed_array[0])
+        self.feed_tree.SelectItem(folder_array[1])
 
         # absolute hack - this is the only way to scroll the first item into view.
         # EnsureVisible doesn't work and nor does calling EnsureVisible on the parent
