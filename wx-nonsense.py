@@ -28,7 +28,7 @@ class MyFrame(wx.Frame):
         self.feed_tree = wx.TreeCtrl(feed_tree_splitter, style=wx.TR_HIDE_ROOT | wx.TR_NO_LINES | wx.TR_HAS_BUTTONS | wx.TR_FULL_ROW_HIGHLIGHT)
         self.feed_tree.SetBackgroundColour(wx.Colour(249, 255, 249))
         self.feed_tree.AssignImageList(self.create_feed_image_list())
-        self.feed_tree.SetIndent(36)
+        self.feed_tree.SetIndent(64)
         self.feed_tree.AddRoot('Root')
 
         # Create another splitter window for the list control and HTML window
@@ -72,7 +72,7 @@ class MyFrame(wx.Frame):
             # we are running in a normal Python environment
             bundle_dir = os.path.dirname(os.path.abspath(__file__))
 
-        icon_size = (32, 32)
+        icon_size = (64, 64)
 
         # Load a default RSS icon and put it in the feed image list
         rss_image_path = os.path.join(bundle_dir, 'rss-32.png')
@@ -232,7 +232,7 @@ class MyFrame(wx.Frame):
         content_start = f"""
         <link rel="stylesheet" href="{self.YARR_URL}/static/stylesheets/bootstrap.min.css">
         <link rel="stylesheet" href="{self.YARR_URL}/static/stylesheets/app.css">
-        <style>.content-wrapper {{ margin: 0 auto 0 1em !important; }}</style>
+        <style>.content-wrapper {{ margin: 0 auto 0 1em !important; }} h1 a {{text-decoration: none !important;}}</style>
         <div class="content px-4 pt-3 pb-5 border-top overflow-auto" style="font-size: 1rem;"><div class="content-wrapper">
 """
         content_end = "</div></div>"
@@ -241,7 +241,7 @@ class MyFrame(wx.Frame):
 <div class="text-muted"><div>{self.feed_tree.GetItemText(self.feed_tree.GetSelection())}</div> <time>{item_date}</time></div>
 """
 
-        content = f"{content_start}<h1>{item_title}</h1>{content_metadata}<hr>{item_content}{content_end}"
+        content = f"{content_start}<h1><a href=\"{data['link']}\">{item_title}</a></h1>{content_metadata}<hr>{item_content}{content_end}"
 
         self.web_view.SetPage(content, "")
         self.mark_item_as_read(item_id, item_index)
