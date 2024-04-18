@@ -17,6 +17,7 @@ except:
 class MyFrame(wx.Frame):
 
     YARR_URL = "http://127.0.0.1:7070"
+    icon_size = (58, 58) # account for 10px transparent padding
 
     def __init__(self):
         super().__init__(parent=None, title='Yaffle')
@@ -28,8 +29,8 @@ class MyFrame(wx.Frame):
         # Add tree control and root
         self.feed_tree = wx.TreeCtrl(feed_tree_splitter, style=wx.TR_HIDE_ROOT | wx.TR_NO_LINES | wx.TR_HAS_BUTTONS | wx.TR_FULL_ROW_HIGHLIGHT)
         self.feed_tree.SetBackgroundColour(wx.Colour(249, 255, 249))
-        self.feed_tree.AssignImageList(self.create_feed_image_list())
-        self.feed_tree.SetIndent(64)
+        self.feed_tree.AssignImageList(self.create_feed_image_list(bundle_dir))
+        self.feed_tree.SetIndent(48)
         self.feed_tree.AddRoot('Root')
 
         # Create another splitter window for the list control and HTML window
@@ -64,26 +65,6 @@ class MyFrame(wx.Frame):
         data = response.json()
         return data
 
-    def create_feed_image_list(self):
-        # Need this for PyInstaller to find the images
-        if getattr(sys, 'frozen', False):
-            # we are running in a bundle
-            bundle_dir = sys._MEIPASS
-        else:
-            # we are running in a normal Python environment
-            bundle_dir = os.path.dirname(os.path.abspath(__file__))
-
-        icon_size = (64, 64)
-
-        # Load a default RSS icon and put it in the feed image list
-        rss_image_path = os.path.join(bundle_dir, 'rss-32.png')
-        rss_image = wx.Image(rss_image_path, wx.BITMAP_TYPE_PNG).Scale(icon_size[0], icon_size[1], wx.IMAGE_QUALITY_HIGH)
-
-        feed_image_list = wx.ImageList(icon_size[0], icon_size[1])
-        feed_image_list.Add(wx.Bitmap(rss_image))
-        feed_image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, icon_size))
-        return feed_image_list
-
     def on_feed_list_resize(self, event):
         # self.feed_list.SetColumnWidth(0, self.feed_list.GetSize()[0])
         event.Skip()
@@ -95,27 +76,19 @@ class MyFrame(wx.Frame):
     def process_icon(self, item, icon_size):
         icon_response = requests.get(f"{self.YARR_URL}/api/feeds/{item['id']}/icon")
         if 'image' in icon_response.headers['Content-Type']:
-            icon_stream = BytesIO(icon_response.content)
+            try:
+                icon_stream = BytesIO(icon_response.content)
+                pil_image = Image.open(icon_stream)
+                pil_image.load()
+            except Exception as e:
+                print(f"C Failed to parse image.")
+                print(e)
+                return None
 
-            # we have to use Pillow here because trying to open an icon with transparency in wx.Image
-            # throws a user-facing error messagebox in wxPython
-            pil_image = Image.open(icon_stream)
-            pil_image.load()
-
-            # if an icon has transparency, extract it and apply it to a white background
-            if pil_image.mode == 'RGBA':
-                background = Image.new("RGB", pil_image.size, (255, 255, 255))
-                background.paste(pil_image, mask=pil_image.split()[3]) # 3 is the alpha channel
-            else:
-                background = pil_image.convert('RGB')
-
-            wx_image = wx.Image(pil_image.size[0], pil_image.size[1])
-            wx_image.SetData(background.tobytes())
-
-            wx_image = wx_image.Scale(icon_size[0], icon_size[1], wx.IMAGE_QUALITY_HIGH)
-            return wx.Bitmap(wx_image)
+            return self.add_padding_to_image(pil_image)
         else:
             print(f"C Failed to load image for feed {item['id']}. Unknown image data format.")
+            return None
 
     def initialise_feed_tree(self):
         folder_response = requests.get(f"{self.YARR_URL}/api/folders")
@@ -152,12 +125,12 @@ class MyFrame(wx.Frame):
         self.feed_tree.ExpandAll()
 
         # self.feed_tree.SelectItem(feed_array[0])
-        self.feed_tree.SelectItem(folder_array[1])
+        # self.feed_tree.SelectItem(folder_array[1])
 
         # absolute hack - this is the only way to scroll the first item into view.
         # EnsureVisible doesn't work and nor does calling EnsureVisible on the parent
-        self.feed_tree.EnsureVisible(feed_array[0])
-        self.feed_tree.ScrollLines(-2)
+        # self.feed_tree.EnsureVisible(folder_array[1])
+        self.feed_tree.ScrollLines(-10)
 
     def get_unread_feed_ids(self):
         return [item['feed_id'] for item in self.feed_status['stats'] if item['unread'] > 0]
