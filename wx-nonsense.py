@@ -7,7 +7,7 @@ from datetime import datetime
 import wx
 import wx.html2
 import requests
-from PIL import Image
+from PIL import Image, ImageOps
 
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
