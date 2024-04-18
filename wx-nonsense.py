@@ -20,10 +20,19 @@ class MyFrame(wx.Frame):
     icon_size = (58, 58) # account for 10px transparent padding
 
     def __init__(self):
+
+        # Need this for PyInstaller to find the images
+        if getattr(sys, 'frozen', False):
+            # we are running in a bundle
+            bundle_dir = sys._MEIPASS
+        else:
+            # we are running in a normal Python environment
+            bundle_dir = os.path.dirname(os.path.abspath(__file__))
+
         super().__init__(parent=None, title='Yaffle')
         self.SetSize(2000, 1200)
         self.SetPosition(wx.Point(500, 500))
-        self.SetIcon(wx.Icon("yaffle.png", wx.BITMAP_TYPE_PNG))
+        self.SetIcon(wx.Icon(os.path.join(bundle_dir, 'yaffle.png'), wx.BITMAP_TYPE_PNG))
         feed_tree_splitter = wx.SplitterWindow(self)
 
         # Add tree control and root
@@ -73,6 +82,50 @@ class MyFrame(wx.Frame):
         self.item_list.SetColumnWidth(0, self.item_list.GetSize()[0])
         event.Skip()
 
+    def create_feed_image_list(self, bundle_dir):
+        # Load a default RSS icon and put it in the feed image list
+        rss_image_path = os.path.join(bundle_dir, 'rss-32.png')
+        rss_image = wx.Image(rss_image_path, wx.BITMAP_TYPE_PNG)
+
+        pil_image = Image.open(rss_image_path)
+        pil_image.load()
+
+        # Create a BytesIO object from the bytes
+        rss_image = self.add_padding_to_image(pil_image)
+
+        feed_image_list = wx.ImageList(self.icon_size[0], self.icon_size[1])
+        feed_image_list.Add(wx.Bitmap(rss_image))
+        feed_image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, self.icon_size))
+        return feed_image_list
+
+    def scale_image(self, image):
+        image = wx.Image(image)
+        image = image.Scale(self.icon_size[0], self.icon_size[1], wx.IMAGE_QUALITY_HIGH)
+        return wx.Bitmap(image)
+
+    def add_padding_to_image(self, pil_image):
+        try:
+            # we have to use Pillow here because trying to open an icon with transparency in wx.Image
+            # throws a user-facing error messagebox in wxPython
+            pil_image.load()
+
+            if pil_image.mode != 'RGBA':
+                pil_image = pil_image.convert('RGBA')
+
+            # Add a transparent margin to the image
+            margin = 10  # The size of the margin
+            pil_image_with_margin = ImageOps.expand(pil_image, border=margin, fill=(0, 0, 0, 0))
+
+            wx_image = wx.Image(pil_image_with_margin.size[0], pil_image_with_margin.size[1])
+            wx_image.SetData(pil_image_with_margin.convert('RGB').tobytes())
+            wx_image.SetAlpha(pil_image_with_margin.convert('RGBA').tobytes()[3::4])
+
+            return wx.Bitmap(self.scale_image(wx_image))
+        except Exception as e:
+            print(f"C Failed to parse image.")
+            print(e)
+            return None
+
     def process_icon(self, item, icon_size):
         icon_response = requests.get(f"{self.YARR_URL}/api/feeds/{item['id']}/icon")
         if 'image' in icon_response.headers['Content-Type']:
@@ -99,7 +152,6 @@ class MyFrame(wx.Frame):
         for index, folder in enumerate(folder_data):
             folder_item_id = self.feed_tree.AppendItem(self.feed_tree.GetRootItem(), folder['title'], 1, -1, folder['id'])
             folder_array.append(folder_item_id)
-            # TODO make folder bold if it contains feeds with unread items
 
         feed_response = requests.get(f"{self.YARR_URL}/api/feeds")
         feed_data = feed_response.json()
