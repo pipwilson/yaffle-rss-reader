@@ -5,7 +5,7 @@ a = Analysis(
     ['wx-nonsense.py'],
     pathex=[],
     binaries=[],
-    datas=[('rss-32.png', '.')],
+    datas=[('rss-32.png', '.'), ('yaffle.png', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -34,5 +34,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['yaffle.ico'],
     hide_console='hide-early',
 )
