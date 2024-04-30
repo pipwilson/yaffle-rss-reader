@@ -4,7 +4,7 @@
 a = Analysis(
     ['yaffle.py'],
     pathex=[],
-    binaries=[],
+    binaries=[('.venv\Lib\site-packages\wx\WebView2Loader.dll', '.')],
     datas=[('rss-32.png', '.'), ('yaffle.png', '.')],
     hiddenimports=[],
     hookspath=[],
