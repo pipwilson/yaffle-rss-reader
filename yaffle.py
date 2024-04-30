@@ -256,13 +256,14 @@ class MyFrame(wx.Frame):
         dt = datetime.strptime(data['date'], "%Y-%m-%dT%H:%M:%SZ")
         item_date = dt.strftime("%#d %B %Y at %H:%M")
 
-        content_start = f"""
+        content_start = f"""<!DOCTYPE html><html lang="en"><head>
         <link rel="stylesheet" href="{self.YARR_URL}/static/stylesheets/bootstrap.min.css">
         <link rel="stylesheet" href="{self.YARR_URL}/static/stylesheets/app.css">
         <style>.content-wrapper {{ margin: 0 auto 0 1em !important; }} h1 a {{text-decoration: none !important;}}</style>
+        </head><body>
         <div class="content px-4 pt-3 pb-5 border-top overflow-auto" style="font-size: 1rem;"><div class="content-wrapper">
 """
-        content_end = "</div></div>"
+        content_end = "</body></div></div>"
 
         content_metadata = f"""
 <div class="text-muted"><div>{self.feed_tree.GetItemText(self.feed_tree.GetSelection())}</div> <time>{item_date}</time></div>
