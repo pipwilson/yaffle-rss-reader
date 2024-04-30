@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['wx-nonsense.py'],
+    ['yaffle.py'],
     pathex=[],
     binaries=[],
     datas=[('rss-32.png', '.'), ('yaffle.png', '.')],
@@ -21,7 +21,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='wx-nonsense',
+    name='yaffle',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
