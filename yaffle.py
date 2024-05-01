@@ -36,6 +36,14 @@ class MyFrame(wx.Frame):
         self.SetIcon(wx.Icon(os.path.join(bundle_dir, 'yaffle.png'), wx.BITMAP_TYPE_PNG))
         feed_tree_splitter = wx.SplitterWindow(self)
 
+        toolbar = self.CreateToolBar(style=wx.TB_HORIZONTAL | wx.NO_BORDER | wx.TB_FLAT | wx.TB_HORZ_TEXT)
+        toolbar.AddLabelTool(101, 'Add subscription', wx.ArtProvider.GetBitmap(wx.ART_PLUS, wx.ART_TOOLBAR))
+        # toolbar.AddLabelTool(102, 'Show all feeds', wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR))
+        # toolbar.AddLabelTool(102, 'Show unread feeds', wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR))
+        # toolbar.AddLabelTool(103, 'Show starred', wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE, wx.ART_TOOLBAR))
+        # toolbar.AddLabelTool(103, 'Update feeds', wx.ArtProvider.GetBitmap(wx.ART_REDO, wx.ART_TOOLBAR))
+        toolbar.Realize()
+
         # Add tree control and root
         self.feed_tree = wx.TreeCtrl(feed_tree_splitter, style=wx.TR_HIDE_ROOT | wx.TR_NO_LINES | wx.TR_HAS_BUTTONS | wx.TR_FULL_ROW_HIGHLIGHT)
         self.feed_tree.SetBackgroundColour(wx.Colour(249, 255, 249))
