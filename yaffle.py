@@ -8,6 +8,7 @@ import wx
 import wx.html2
 import requests
 from PIL import Image, ImageOps
+import webbrowser
 
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
@@ -50,6 +51,8 @@ class MyFrame(wx.Frame):
         self.item_list.InsertColumn(0, 'Title')
 
         self.web_view = wx.html2.WebView.New(right_splitter)
+        self.web_view.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.on_webview_navigating)
+        self.web_view.Bind(wx.html2.EVT_WEBVIEW_NEWWINDOW, self.on_webview_navigating) # catches links with target="_blank"
 
         # Set the HTML window as the bottom window of the splitter
         right_splitter.SplitHorizontally(self.item_list, self.web_view)
@@ -263,7 +266,7 @@ class MyFrame(wx.Frame):
         </head><body>
         <div class="content px-4 pt-3 pb-5 border-top overflow-auto" style="font-size: 1rem;"><div class="content-wrapper">
 """
-        content_end = "</body></div></div>"
+        content_end = "</div></div></body>"
 
         content_metadata = f"""
 <div class="text-muted"><div>{self.feed_tree.GetItemText(self.feed_tree.GetSelection())}</div> <time>{item_date}</time></div>
@@ -273,6 +276,10 @@ class MyFrame(wx.Frame):
 
         self.web_view.SetPage(content, "")
         self.mark_item_as_read(item_id, item_index)
+
+    def on_webview_navigating(self, event):
+        if(event.GetNavigationAction() == wx.html2.WEBVIEW_NAV_ACTION_USER and event.GetURL() != "about:blank" and not event.GetURL().startswith("data:text/html")):
+            webbrowser.open(event.GetURL())
 
     def mark_item_as_read(self, item_id, item_index):
         requests.put(f"{self.YARR_URL}/api/items/{item_id}", json={"status": "read"})
