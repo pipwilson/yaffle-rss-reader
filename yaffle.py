@@ -10,6 +10,8 @@ import requests
 from PIL import Image, ImageOps
 import webbrowser
 
+from icon_processing import IconProcessing
+
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
 except:
@@ -18,7 +20,6 @@ except:
 class MyFrame(wx.Frame):
 
     YARR_URL = "http://127.0.0.1:7070"
-    icon_size = (58, 58) # account for 10px transparent padding
 
     def __init__(self):
 
@@ -102,40 +103,12 @@ class MyFrame(wx.Frame):
         pil_image.load()
 
         # Create a BytesIO object from the bytes
-        rss_image = self.add_padding_to_image(pil_image)
+        rss_image = IconProcessing.add_padding_to_image(pil_image)
 
-        feed_image_list = wx.ImageList(self.icon_size[0], self.icon_size[1])
+        feed_image_list = wx.ImageList(IconProcessing.ICON_SIZE[0], IconProcessing.ICON_SIZE[1])
         feed_image_list.Add(wx.Bitmap(rss_image))
-        feed_image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, self.icon_size))
+        feed_image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, IconProcessing.ICON_SIZE))
         return feed_image_list
-
-    def scale_image(self, image):
-        image = wx.Image(image)
-        image = image.Scale(self.icon_size[0], self.icon_size[1], wx.IMAGE_QUALITY_HIGH)
-        return wx.Bitmap(image)
-
-    def add_padding_to_image(self, pil_image):
-        try:
-            # we have to use Pillow here because trying to open an icon with transparency in wx.Image
-            # throws a user-facing error messagebox in wxPython
-            pil_image.load()
-
-            if pil_image.mode != 'RGBA':
-                pil_image = pil_image.convert('RGBA')
-
-            # Add a transparent margin to the image
-            margin = 10  # The size of the margin
-            pil_image_with_margin = ImageOps.expand(pil_image, border=margin, fill=(0, 0, 0, 0))
-
-            wx_image = wx.Image(pil_image_with_margin.size[0], pil_image_with_margin.size[1])
-            wx_image.SetData(pil_image_with_margin.convert('RGB').tobytes())
-            wx_image.SetAlpha(pil_image_with_margin.convert('RGBA').tobytes()[3::4])
-
-            return wx.Bitmap(self.scale_image(wx_image))
-        except Exception as e:
-            print(f"C Failed to parse image.")
-            print(e)
-            return None
 
     def process_icon(self, item, icon_size):
         icon_response = requests.get(f"{self.YARR_URL}/api/feeds/{item['id']}/icon")
@@ -149,7 +122,7 @@ class MyFrame(wx.Frame):
                 print(e)
                 return None
 
-            return self.add_padding_to_image(pil_image)
+            return IconProcessing.add_padding_to_image(pil_image)
         else:
             print(f"C Failed to load image for feed {item['id']}. Unknown image data format.")
             return None
