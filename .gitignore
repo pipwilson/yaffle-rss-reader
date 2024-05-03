@@ -1,2 +1,4 @@
 build/
 dist/
+development-screenshots/
+*-test.*
