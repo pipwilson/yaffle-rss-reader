@@ -3,6 +3,7 @@ import os
 import sys
 from io import BytesIO
 from datetime import datetime
+from functools import partial
 import webbrowser
 
 import wx
@@ -72,6 +73,7 @@ class MyFrame(wx.Frame):
         self.feed_tree.Bind(wx.EVT_LEFT_DOWN, self.on_tree_item_activated)
         self.feed_tree.Bind(wx.EVT_SIZE, self.on_feed_list_resize)
         self.feed_tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.on_feed_tree_item_selected)
+        self.feed_tree.Bind(wx.EVT_TREE_ITEM_RIGHT_CLICK, self.on_tree_item_right_click)
 
         self.item_list.Bind(wx.EVT_SIZE, self.on_item_list_resize)
         self.item_list.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_feed_item_selected)
@@ -215,6 +217,24 @@ class MyFrame(wx.Frame):
         feed_id = self.feed_tree.GetItemData(event.GetItem())
         self.populate_item_list(feed_id)
         self.SetTitle(self.feed_tree.GetItemText(event.GetItem()) + ' - Yaffle')
+
+    def on_tree_item_right_click(self, event):
+        feed_id = self.feed_tree.GetItemData(event.GetItem())
+
+        menu = wx.Menu()
+        menu.Append(101, 'Mark all as read')
+        self.Bind(wx.EVT_MENU, partial(self.on_context_menu_item_selected, feed_id=feed_id))
+
+        self.PopupMenu(menu)
+
+        menu.Destroy()
+
+    def on_context_menu_item_selected(self, event, feed_id):
+        menu_item_id = event.GetId()
+        if menu_item_id == 101:
+            print(f'Menu Item 1 selected for feed: {feed_id}')
+            # self.mark_feed_as_read(feed_id)
+
 
     def on_feed_item_selected(self, event):
         item_index = event.GetIndex()
