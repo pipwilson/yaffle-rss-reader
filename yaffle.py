@@ -3,12 +3,12 @@ import os
 import sys
 from io import BytesIO
 from datetime import datetime
+import webbrowser
 
 import wx
 import wx.html2
 import requests
 from PIL import Image
-import webbrowser
 
 from icon_processing import IconProcessing
 
@@ -160,7 +160,7 @@ class MyFrame(wx.Frame):
 
         self.feed_tree.ExpandAll()
 
-        # self.feed_tree.SelectItem(feed_array[0])
+        self.feed_tree.SelectItem(feed_array[0])
         # self.feed_tree.SelectItem(folder_array[1])
 
         # absolute hack - this is the only way to scroll the first item into view.
