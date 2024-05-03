@@ -3,3 +3,4 @@ dist/
 development-screenshots/
 *-test.*
 .vscode/
+__pycache__/
