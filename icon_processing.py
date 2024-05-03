@@ -1,9 +1,20 @@
 import wx
-from PIL import ImageOps
+from PIL import Image, ImageOps
 
 class IconProcessing:
 
     ICON_SIZE = (58, 58) # account for 10px transparent padding
+
+    @staticmethod
+    def load_and_pad_image(image_path_or_data):
+        try:
+            pil_image = Image.open(image_path_or_data)
+            pil_image.load()
+            return IconProcessing.add_padding_to_image(pil_image)
+        except Exception as e:
+            print("Failed to load image.")
+            print(e)
+            return None
 
     @staticmethod
     def scale_image(image):

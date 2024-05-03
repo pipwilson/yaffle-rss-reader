@@ -8,7 +8,6 @@ import webbrowser
 import wx
 import wx.html2
 import requests
-from PIL import Image
 
 from icon_processing import IconProcessing
 
@@ -99,11 +98,7 @@ class MyFrame(wx.Frame):
         rss_image_path = os.path.join(bundle_dir, 'rss-32.png')
         rss_image = wx.Image(rss_image_path, wx.BITMAP_TYPE_PNG)
 
-        pil_image = Image.open(rss_image_path)
-        pil_image.load()
-
-        # Create a BytesIO object from the bytes
-        rss_image = IconProcessing.add_padding_to_image(pil_image)
+        rss_image = IconProcessing.load_and_pad_image(rss_image_path)
 
         feed_image_list = wx.ImageList(IconProcessing.ICON_SIZE[0], IconProcessing.ICON_SIZE[1])
         feed_image_list.Add(wx.Bitmap(rss_image))
@@ -113,16 +108,9 @@ class MyFrame(wx.Frame):
     def process_icon(self, item):
         icon_response = requests.get(f"{self.YARR_URL}/api/feeds/{item['id']}/icon")
         if 'image' in icon_response.headers['Content-Type']:
-            try:
-                icon_stream = BytesIO(icon_response.content)
-                pil_image = Image.open(icon_stream)
-                pil_image.load()
-            except Exception as e:
-                print("Failed to parse image.")
-                print(e)
-                return None
-
-            return IconProcessing.add_padding_to_image(pil_image)
+            icon_stream = BytesIO(icon_response.content)
+            image = IconProcessing.load_and_pad_image(icon_stream)
+            return image
         else:
             print(f"C Failed to load image for feed {item['id']}. Unknown image data format.")
             return None
