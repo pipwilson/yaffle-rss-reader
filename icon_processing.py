@@ -1,5 +1,5 @@
 import wx
-from PIL import Image, ImageOps
+from PIL import ImageOps
 
 class IconProcessing:
 
@@ -31,6 +31,6 @@ class IconProcessing:
 
             return wx.Bitmap(IconProcessing.scale_image(wx_image))
         except Exception as e:
-            print(f"C Failed to parse image.")
+            print("Failed to parse image.")
             print(e)
             return None
