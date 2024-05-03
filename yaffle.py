@@ -7,7 +7,7 @@ from datetime import datetime
 import wx
 import wx.html2
 import requests
-from PIL import Image, ImageOps
+from PIL import Image
 import webbrowser
 
 from icon_processing import IconProcessing
@@ -110,7 +110,7 @@ class MyFrame(wx.Frame):
         feed_image_list.Add(wx.ArtProvider.GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, IconProcessing.ICON_SIZE))
         return feed_image_list
 
-    def process_icon(self, item, icon_size):
+    def process_icon(self, item):
         icon_response = requests.get(f"{self.YARR_URL}/api/feeds/{item['id']}/icon")
         if 'image' in icon_response.headers['Content-Type']:
             try:
@@ -118,7 +118,7 @@ class MyFrame(wx.Frame):
                 pil_image = Image.open(icon_stream)
                 pil_image.load()
             except Exception as e:
-                print(f"C Failed to parse image.")
+                print("Failed to parse image.")
                 print(e)
                 return None
 
@@ -144,7 +144,7 @@ class MyFrame(wx.Frame):
         for index, item in enumerate(feed_data):
             icon_index = 0 # the default RSS icon
             if item['has_icon'] is True:
-                icon = self.process_icon(item, self.feed_tree.GetImageList().GetSize(0))
+                icon = self.process_icon(item)
                 if icon:
                     icon_index = self.feed_tree.GetImageList().Add(icon)
 
