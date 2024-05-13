@@ -198,7 +198,8 @@ class MyFrame(wx.Frame):
         normal_font.SetWeight(wx.FONTWEIGHT_NORMAL)
 
         for index, feed_item in enumerate(data["list"]):
-            item = self.item_list.InsertItem(index, str(feed_item['title']))
+            item_title = self.get_item_title(feed_item)
+            item = self.item_list.InsertItem(index, item_title)
             self.item_list.SetItemData(item, feed_item['id'])
 
             # if the item is unread, set the font to bold
@@ -207,6 +208,14 @@ class MyFrame(wx.Frame):
             else:
                 # we must set a default font in order to check for unread items later
                 self.item_list.SetItemFont(item, normal_font)
+
+    def get_item_title(self, feed_item):
+        if 'title' in feed_item and len(feed_item['title']) > 0:
+            return str(feed_item['title'])
+        elif 'date' in feed_item and len(feed_item['date']) > 0:
+            return str(feed_item['date'])
+        else:
+            return "Untitled"
 
     def on_feed_tree_item_selected(self, event):
         self.item_list.DeleteAllItems()
