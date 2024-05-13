@@ -260,7 +260,7 @@ class MyFrame(wx.Frame):
         content_start = f"""<!DOCTYPE html><html lang="en"><head>
         <link rel="stylesheet" href="{self.YARR_URL}/static/stylesheets/bootstrap.min.css">
         <link rel="stylesheet" href="{self.YARR_URL}/static/stylesheets/app.css">
-        <style>.content-wrapper {{ margin: 0 auto 0 1em !important; }} h1 a {{text-decoration: none !important;}}</style>
+        <style>.content-wrapper {{ margin: 0 auto 0 1em !important; }} h1 a {{text-decoration: none !important;}} .content-body a {{position:relative}} .content-body a[href^="http"]:hover::after {{ content: attr(href); position: absolute; left: 2em; top: -2em; min-width: 200px; border: 1px #aaaaaa solid; background-color: #ffffcc; border-radius: 10px; padding: 6px; color: #000000; font-size: 14px; z-index: 1; text-wrap: nowrap;}}</style>
         </head><body>
         <div class="content px-4 pt-3 pb-5 border-top overflow-auto" style="font-size: 1rem;"><div class="content-wrapper">
 """
@@ -270,7 +270,7 @@ class MyFrame(wx.Frame):
 <div class="text-muted"><div>{self.feed_tree.GetItemText(self.feed_tree.GetSelection())}</div> <time>{item_date}</time></div>
 """
 
-        content = f"{content_start}<h1><a href=\"{data['link']}\">{item_title}</a></h1>{content_metadata}<hr>{item_content}{content_end}"
+        content = f"{content_start}<h1><a href=\"{data['link']}\">{item_title}</a></h1>{content_metadata}<hr><div class='content-body'>{item_content}</div>{content_end}"
 
         self.web_view.SetPage(content, "")
         self.mark_item_as_read(item_id, item_index)
