@@ -5,13 +5,13 @@ from io import BytesIO
 from datetime import datetime
 from functools import partial
 import webbrowser
-import configparser
 
 import wx
 import wx.html2
 import requests
 
 from icon_processing import IconProcessing
+import config_management
 
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
@@ -22,7 +22,9 @@ class MyFrame(wx.Frame):
 
     def __init__(self):
 
-        self.load_state()
+        config = config_management.load_config()
+        self.YARR_URL = config['YARR_URL']
+        self.STARTING_FEED = config['selected_feed']
 
         # Need this for PyInstaller to find the images
         if getattr(sys, 'frozen', False):
@@ -85,45 +87,8 @@ class MyFrame(wx.Frame):
         self.initialise_feed_tree()
 
     def on_exit(self, event):
-        self.save_state()
+        config_management.save_config(self)
         self.Destroy()
-
-    def load_state(self):
-        config = configparser.ConfigParser()
-        config.read('yaffle.ini')
-
-        if('Yaffle' not in config):
-            print("Failed to load config file")
-            self.create_initial_config()
-            config.read('yaffle.ini')
-            if(config is None):
-                print("Failed to load config file")
-                sys.exit(1)
-            else:
-                self.load_state()
-        else:
-            if 'Yaffle' in config:
-                self.YARR_URL = config['Yaffle']['YARR_URL']
-                self.STARTING_FEED = config['Yaffle']['selected_feed']
-
-    def create_initial_config(self):
-        print("Creating initial config")
-        config = configparser.ConfigParser()
-        config['Yaffle'] = {'YARR_URL': 'http://127.0.0.1:7070'}
-        with open('yaffle.ini', 'w', encoding='utf-8') as configfile:
-            config.write(configfile)
-
-    def save_state(self):
-        print("Saving state")
-        try:
-            config = configparser.ConfigParser()
-            config.read('yaffle.ini')
-            config['Yaffle']['selected_feed'] = str(self.feed_tree.GetItemData(self.feed_tree.GetSelection()))
-            with open('yaffle.ini', 'w', encoding='utf-8') as configfile:
-                config.write(configfile)
-        except:
-            print("Failed to save state")
-            return
 
     def get_feed_status(self):
         response = requests.get(f"{self.YARR_URL}/api/status")
