@@ -128,12 +128,12 @@ class YaffleFrame(wx.Frame):
     def initialise_feed_tree(self):
         folder_response = requests.get(f"{self.YARR_URL}/api/folders")
         folder_data = folder_response.json()
-        folder_array = [self.feed_tree.GetRootItem()] # create an array to hold the folder items. First item is the root
-        feed_array = []
+        folder_dict = {0: self.feed_tree.GetRootItem()} # create a dict to hold the folder items. First item is the root
 
         for index, folder in enumerate(folder_data):
             folder_item_id = self.feed_tree.AppendItem(self.feed_tree.GetRootItem(), folder['title'], 1, -1, folder['id'])
-            folder_array.append(folder_item_id)
+            # we don't currently support restoring selection of a folder on exit - would need to change ItemData to denote folder or feed selected
+            folder_dict[folder['id']] = folder_item_id
 
         feed_response = requests.get(f"{self.YARR_URL}/api/feeds")
         feed_data = feed_response.json()
@@ -147,12 +147,12 @@ class YaffleFrame(wx.Frame):
                     icon_index = self.feed_tree.GetImageList().Add(icon)
 
             if item['folder_id'] is None:
-                item['folder_id'] = folder_array[0]
+                item['folder_id'] = 0
 
-            feed_item_id = self.feed_tree.AppendItem(folder_array[item['folder_id']], str(item['title']).strip(), icon_index, -1, item['id'])
+            feed_item_id = self.feed_tree.AppendItem(folder_dict[item['folder_id']], str(item['title']).strip(), icon_index, -1, item['id'])
+            # if this was the feed that was selected when the app was last closed, select it
             if(item['id'] == int(self.STARTING_FEED)):
                 self.feed_tree.SelectItem(feed_item_id)
-            feed_array.append(feed_item_id)
 
             # if the feed has unread items, make it bold
             if item['id'] in self.get_unread_feed_ids():
@@ -161,12 +161,13 @@ class YaffleFrame(wx.Frame):
         self.feed_tree.ExpandAll()
 
         if(self.feed_tree.GetSelection().IsOk() is not True):
-            self.feed_tree.SelectItem(feed_array[0])
+            self.feed_tree.SelectItem(self.feed_tree.GetRootItem().GetFirstChild())
 
-        # absolute hack - this is the only way to scroll the first item into view.
-        # EnsureVisible doesn't work and nor does calling EnsureVisible on the parent
-        # self.feed_tree.EnsureVisible(folder_array[1])
-        self.feed_tree.ScrollLines(-10)
+        # Scroll the selected item into view and make sure it's in a reasonable place on screen
+        self.feed_tree.EnsureVisible(self.feed_tree.GetSelection())
+        rect = self.feed_tree.GetBoundingRect(self.feed_tree.GetSelection(), textOnly=True)
+        if(rect.y > (0.8)*self.GetSize().height):
+            self.feed_tree.ScrollLines(10)
 
     def get_unread_feed_ids(self):
         return [item['feed_id'] for item in self.feed_status['stats'] if item['unread'] > 0]
