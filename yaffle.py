@@ -18,7 +18,7 @@ try:
 except:
     pass
 
-class MyFrame(wx.Frame):
+class YaffleFrame(wx.Frame):
 
     def __init__(self):
 
@@ -312,6 +312,6 @@ class MyFrame(wx.Frame):
 
 if __name__ == '__main__':
     app = wx.App()
-    frame = MyFrame()
+    frame = YaffleFrame()
     frame.Show()
     app.MainLoop()
