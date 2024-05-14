@@ -6,21 +6,19 @@ def load_config():
     config.read('yaffle.ini')
 
     if('Yaffle' not in config):
-        print("Failed to load config file")
         create_initial_config()
         config.read('yaffle.ini')
         if(config is None):
-            print("Failed to load config file")
             sys.exit(1)
         else:
             load_config()
     else:
-        if 'Yaffle' in config:
-            return config['Yaffle']
+        return config['Yaffle']
 
 def create_initial_config():
     config = configparser.ConfigParser()
-    config['Yaffle'] = {'YARR_URL': 'http://127.0.0.1:7070'}
+    config['Yaffle'] = {'YARR_URL': 'http://127.0.0.1:7070',
+                        'selected_feed': '0'}
     with open('yaffle.ini', 'w', encoding='utf-8') as configfile:
         config.write(configfile)
 
