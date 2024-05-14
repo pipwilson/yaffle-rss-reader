@@ -161,7 +161,7 @@ class YaffleFrame(wx.Frame):
         self.feed_tree.ExpandAll()
 
         if(self.feed_tree.GetSelection().IsOk() is not True):
-            self.feed_tree.SelectItem(self.feed_tree.GetRootItem().GetFirstChild())
+            self.feed_tree.SelectItem(self.feed_tree.GetFirstChild(self.feed_tree.GetRootItem())[0])
 
         # Scroll the selected item into view and make sure it's in a reasonable place on screen
         self.feed_tree.EnsureVisible(self.feed_tree.GetSelection())
