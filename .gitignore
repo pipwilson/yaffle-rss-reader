@@ -2,5 +2,6 @@ build/
 dist/
 development-screenshots/
 *-test.*
+*.whl
 .vscode/
 __pycache__/
