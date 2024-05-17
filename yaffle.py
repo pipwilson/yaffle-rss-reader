@@ -265,7 +265,7 @@ class YaffleFrame(wx.Frame):
         data = response.json()
 
         item_content = data['content']
-        dt = datetime.strptime(data['date'], "%Y-%m-%dT%H:%M:%SZ")
+        dt = datetime.fromisoformat(data['date'])
         item_date = dt.strftime("%#d %B %Y at %H:%M")
 
         content_start = f"""<!DOCTYPE html><html lang="en"><head>
