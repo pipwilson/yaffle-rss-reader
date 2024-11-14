@@ -19,3 +19,7 @@ https://pyinstaller.org/en/stable/spec-files.html
 Ran SVGs from https://feathericons.com/ through https://svgtopng.com/
 
 [Woodpecker icons created by Icongeek26 - Flaticon](https://www.flaticon.com/free-icons/woodpecker)
+
+## Yarr API
+
+https://github.com/nkanaev/yarr/blob/master/src/assets/javascripts/api.js
