@@ -42,11 +42,16 @@ class YaffleFrame(wx.Frame):
         feed_tree_splitter = wx.SplitterWindow(self)
 
         toolbar = self.CreateToolBar(style=wx.TB_HORIZONTAL | wx.NO_BORDER | wx.TB_FLAT | wx.TB_HORZ_TEXT)
-        toolbar.AddLabelTool(101, 'Add subscription', wx.ArtProvider.GetBitmap(wx.ART_PLUS, wx.ART_TOOLBAR))
-        # toolbar.AddLabelTool(102, 'Show all feeds', wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR))
-        # toolbar.AddLabelTool(102, 'Show unread feeds', wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR))
-        # toolbar.AddLabelTool(103, 'Show starred', wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE, wx.ART_TOOLBAR))
-        # toolbar.AddLabelTool(103, 'Update feeds', wx.ArtProvider.GetBitmap(wx.ART_REDO, wx.ART_TOOLBAR))
+        toolbar.AddTool(100, 'Show all feeds/show unread', wx.ArtProvider.GetBitmap(wx.ART_NEW_DIR, wx.ART_TOOLBAR))
+        # each folder has a read/unread state, then when clicking the button it filters the items in the selected folder and uses the per-folder flag to show/hide the rest
+        # wx doesn't have a way of changing tree item visibility so tree needs to be deleted and rebuilt (or switch between two trees)
+        # probably loop through all items and remove feeds that are read, putting them into a different in-memory array
+        # then when the button is clicked, rebuild the tree with the in-memory array, and implement OnCompareItems so we can sort the tree
+        # starting status needs to be saved too and work with either selected, so all feeds still need to be fetched at startup, but filter needs to apply if it's unread only
+
+        toolbar.AddTool(101, 'Add subscription', wx.ArtProvider.GetBitmap(wx.ART_PLUS, wx.ART_TOOLBAR))
+        # toolbar.AddTool(103, 'Show starred', wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE, wx.ART_TOOLBAR))
+        # toolbar.AddTool(103, 'Update feeds', wx.ArtProvider.GetBitmap(wx.ART_REDO, wx.ART_TOOLBAR))
         toolbar.Realize()
 
         # Add tree control and root
@@ -91,9 +96,14 @@ class YaffleFrame(wx.Frame):
         self.Destroy()
 
     def get_feed_status(self):
+        print(f"Fetching status from {self.YARR_URL}")
         response = requests.get(f"{self.YARR_URL}/api/status")
-        data = response.json()
-        return data
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        else:
+            print(f"Failed to fetch status: {response.status_code}")
+            self.on_exit(wx.EVT_CLOSE)
 
     def on_feed_list_resize(self, event):
         # self.feed_list.SetColumnWidth(0, self.feed_list.GetSize()[0])
@@ -131,6 +141,7 @@ class YaffleFrame(wx.Frame):
         folder_dict = {0: self.feed_tree.GetRootItem()} # create a dict to hold the folder items. First item is the root
 
         for index, folder in enumerate(folder_data):
+            # put the API-provided folder ID in the item data so we can use it to fetch feeds later
             folder_item_id = self.feed_tree.AppendItem(self.feed_tree.GetRootItem(), folder['title'], 1, -1, folder['id'])
             # we don't currently support restoring selection of a folder on exit - would need to change ItemData to denote folder or feed selected
             folder_dict[folder['id']] = folder_item_id
@@ -242,7 +253,8 @@ class YaffleFrame(wx.Frame):
         feed_id = self.feed_tree.GetItemData(event.GetItem())
 
         menu = wx.Menu()
-        menu.Append(101, 'Mark all as read')
+        menu.Append(101, 'Mark all feed items as read')
+        menu.Append(102, 'Rename this feed')
         self.Bind(wx.EVT_MENU, partial(self.on_context_menu_item_selected, feed_id=feed_id))
 
         self.PopupMenu(menu)
@@ -253,7 +265,7 @@ class YaffleFrame(wx.Frame):
         menu_item_id = event.GetId()
         if menu_item_id == 101:
             print(f'Menu Item 1 selected for feed: {feed_id}')
-            # self.mark_feed_as_read(feed_id)
+            self.mark_feed_as_read(feed_id)
 
 
     def on_feed_item_selected(self, event):
@@ -289,6 +301,10 @@ class YaffleFrame(wx.Frame):
     def on_webview_navigating(self, event):
         if(event.GetNavigationAction() == wx.html2.WEBVIEW_NAV_ACTION_USER and event.GetURL() != "about:blank" and not event.GetURL().startswith("data:text/html")):
             webbrowser.open(event.GetURL())
+
+    def mark_feed_as_read(self, feed_id):
+        requests.put(f"{self.YARR_URL}/api/items?feed_id={feed_id}&status=unread") # mark all items as read
+        # TODO: mark the feed as read in the tree - use the code from the method below refactored into a separate method
 
     def mark_item_as_read(self, item_id, item_index):
         requests.put(f"{self.YARR_URL}/api/items/{item_id}", json={"status": "read"})

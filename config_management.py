@@ -26,7 +26,8 @@ def save_config(frame):
     try:
         config = configparser.ConfigParser()
         config.read('yaffle.ini')
-        config['Yaffle']['selected_feed'] = str(frame.feed_tree.GetItemData(frame.feed_tree.GetSelection()))
+        if frame.feed_tree is not None:
+            config['Yaffle']['selected_feed'] = str(frame.feed_tree.GetItemData(frame.feed_tree.GetSelection()))
         with open('yaffle.ini', 'w', encoding='utf-8') as configfile:
             config.write(configfile)
     except:
