@@ -1,12 +1,15 @@
 import ctypes
 import os
 import sys
+from AppKit import NSApplication, NSImage
+from Foundation import NSURL
 from io import BytesIO
 from datetime import datetime
 from functools import partial
 import webbrowser
 
 import wx
+import wx.adv
 import wx.html2
 import requests
 
@@ -35,9 +38,43 @@ class YaffleFrame(wx.Frame):
             bundle_dir = os.path.dirname(os.path.abspath(__file__))
 
         super().__init__(parent=None, title='Yaffle')
-        self.SetSize(2000, 1200)
-        self.SetPosition(wx.Point(500, 500))
-        self.SetIcon(wx.Icon(os.path.join(bundle_dir, 'yaffle.png'), wx.BITMAP_TYPE_PNG))
+
+        # Set the size based on the "dimensions" parameter in the config file if it exists
+        if 'dimensions' in config:
+            dimensions = config['dimensions']
+            width, height = map(int, dimensions.split('x'))
+            self.SetSize(width, height)
+        else:
+            display = wx.Display()
+            screen_height = display.GetGeometry().GetHeight()
+            screen_width = display.GetGeometry().GetWidth()
+            self.SetSize(round(screen_width / 2), round(screen_height / 2))
+
+
+        # Set the position based on the "position" parameter in the config file if it exists
+        if 'position' in config:
+            position = config['position']
+            x, y = map(int, position.split(','))
+            self.SetPosition((x, y))
+        else:
+            self.Centre()
+
+        # Set the dock icon on macOS
+        if sys.platform == 'darwin':
+            app = NSApplication.sharedApplication()
+            icon_path = os.path.join(bundle_dir, 'yaffle.png')
+            icon_url = NSURL.fileURLWithPath_(icon_path)
+            icon_image = NSImage.alloc().initWithContentsOfURL_(icon_url)
+            app.setApplicationIconImage_(icon_image)
+
+            # Set application menu title
+            main_menu = app.mainMenu()
+            app_menu_item = main_menu.itemAtIndex_(0)
+            app_menu = app_menu_item.submenu()
+            app_name = "Yaffle"
+            app_menu_item.setTitle_(app_name)
+            app_menu.setTitle_(app_name)
+
         self.Bind(wx.EVT_CLOSE, self.on_exit)
         feed_tree_splitter = wx.SplitterWindow(self)
 

@@ -27,6 +27,13 @@ def save_config(frame):
         config = configparser.ConfigParser()
         config.read('yaffle.ini')
         config['Yaffle']['selected_feed'] = str(frame.feed_tree.GetItemData(frame.feed_tree.GetSelection()))
+
+        width, height = frame.GetSize()
+        config['Yaffle']['dimensions'] = f"{width}x{height}"
+
+        x, y = frame.GetPosition()
+        config['Yaffle']['position'] = f"{x},{y}"
+
         with open('yaffle.ini', 'w', encoding='utf-8') as configfile:
             config.write(configfile)
     except:
